@@ -1,42 +1,48 @@
+"""Core ChatBot implementation."""
+
 from __future__ import annotations
 
-import argparse
+from collections import deque
+from typing import Deque, List, Optional
 
-from chatbot.core import ChatBot
-
-
-def _run_interactive_session() -> None:
-    bot = ChatBot()
-    print("Chatbot AI ready. Type 'exit' to quit.")
-    while True:
-        try:
-            user_input = input("You: ").strip()
-        except EOFError:
-            print("\nSession ended.")
-            break
-
-        if user_input.lower() in {"exit", "quit", "bye"}:
-            print("Bot: Goodbye! Come back anytime.")
-            break
-
-        response = bot.chat(user_input)
-        print(f"Bot: {response}")
+from .intent_engine import IntentEngine, ResponseManager
+from .session_memory import SessionMemory
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the chatbot AI CLI")
-    parser.add_argument("--demo", action="store_true", help="Run a short demo conversation")
-    args = parser.parse_args()
+class ChatBot:
+    """A simple but professional conversational bot with intent routing and memory."""
 
-    if args.demo:
-        bot = ChatBot()
-        for sample in ["hello", "tell me about your features", "help me", "bye"]:
-            print(f"You: {sample}")
-            print(f"Bot: {bot.chat(sample)}")
-        return
+    def __init__(self, max_history: int = 5, session_id: str = "default"):
+        self.intent_engine = IntentEngine()
+        self.response_manager = ResponseManager()
+        self.memory = SessionMemory(max_history=max_history)
+        self.max_history = max_history
+        self.session_id = session_id
+        self.history: Deque[dict] = deque(maxlen=max_history)
 
-    _run_interactive_session()
+    def chat(self, user_message: str, session_id: Optional[str] = None) -> str:
+        message = (user_message or "").strip()
+        if not message:
+            return "Please send a message so I can respond."
 
+        intent_match = self.intent_engine.detect(message)
+        intent_name = intent_match.intent
+        response = self.response_manager.generate(intent_name, message, list(self.history))
 
-if __name__ == "__main__":
-    main()
+        history_item = {
+            "user": message,
+            "intent": intent_name,
+            "confidence": intent_match.confidence,
+            "response": response,
+        }
+        self.history.append(history_item)
+
+        active_session = session_id or self.session_id
+        self.memory.add(active_session, message, intent_name, response)
+        return response
+
+    def recent_history(self) -> List[dict]:
+        return list(self.history)
+
+    def get_session_history(self, session_id: Optional[str] = None) -> List[dict]:
+        return self.memory.get_recent(session_id or self.session_id)

@@ -1,8 +1,15 @@
+"""Intent classification and response routing utilities."""
+
+from __future__ import annotations
+
+from typing import Callable, Dict
+
+
 class IntentRouter:
     """Maps detected intents to response handlers."""
 
     def __init__(self):
-        self.handlers = {
+        self.handlers: Dict[str, Callable[[str], str]] = {
             "greeting": self._handle_greeting,
             "help": self._handle_help,
             "goodbye": self._handle_goodbye,
@@ -17,10 +24,10 @@ class IntentRouter:
         return handler(user_message)
 
     def _handle_greeting(self, user_message: str) -> str:
-        return "Hello! How can I help you today?"
+        return "Hello! I'm here to help. How can I assist you today?"
 
     def _handle_help(self, user_message: str) -> str:
-        return "I can help with product questions, support details, feature explanations, and general conversation."
+        return "I can help with product information, support, and general questions."
 
     def _handle_goodbye(self, user_message: str) -> str:
         return "Goodbye! Come back anytime."

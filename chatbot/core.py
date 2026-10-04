@@ -1,27 +1,33 @@
-from collections import deque
+"""Session-scoped memory for chatbot conversations."""
 
-from .intents import IntentRouter
-from .nlp import NLPProcessor
+from __future__ import annotations
+
+from collections import defaultdict, deque
+from typing import Deque, Dict, List, Optional
 
 
-class ChatBot:
-    """A simple AI chatbot with intent routing and conversation memory."""
+class SessionMemory:
+    """Stores recent conversation turns and metadata per session."""
 
-    def __init__(self, max_history: int = 5):
-        self.nlp = NLPProcessor()
-        self.router = IntentRouter()
+    def __init__(self, max_history: int = 10):
         self.max_history = max_history
-        self.history = deque(maxlen=max_history)
+        self._sessions: Dict[str, Deque[dict]] = defaultdict(lambda: deque(maxlen=max_history))
 
-    def chat(self, user_message: str) -> str:
-        message = (user_message or "").strip()
-        if not message:
-            return "Please send a message so I can respond."
+    def add(self, session_id: str, user_message: str, intent: str, response: str) -> dict:
+        payload = {
+            "session_id": session_id,
+            "user_message": user_message,
+            "intent": intent,
+            "response": response,
+        }
+        self._sessions[session_id].append(payload)
+        return payload
 
-        normalized = self.nlp.preprocess(message)
-        intent = self.nlp.detect_intent(normalized)
-        self.history.append({"user": message, "intent": intent})
-        return self.router.handle(intent, message)
+    def get_recent(self, session_id: str) -> List[dict]:
+        return list(self._sessions.get(session_id, ()))
 
-    def recent_history(self):
-        return list(self.history)
+    def clear(self, session_id: Optional[str] = None) -> None:
+        if session_id is None:
+            self._sessions.clear()
+        else:
+            self._sessions.pop(session_id, None)

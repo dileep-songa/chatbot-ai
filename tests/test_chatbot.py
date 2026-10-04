@@ -32,3 +32,12 @@ def test_conversation_history_is_tracked():
     assert len(history) == 2
     assert history[0]["intent"] == "greeting"
     assert history[1]["intent"] == "help"
+
+
+def test_session_memory_tracks_interactions():
+    bot = ChatBot(session_id="session-001")
+    bot.chat("hello", session_id="session-001")
+    history = bot.get_session_history("session-001")
+    assert len(history) == 1
+    assert history[0]["intent"] == "greeting"
+    assert "Hello" in history[0]["response"]
