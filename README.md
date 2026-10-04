@@ -198,4 +198,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Let's build intelligent conversations!** 🚀
 
-Made with ❤️ by Dileep Songa
+ Dileep Songa
